@@ -1,6 +1,6 @@
 import tempfile
 import os
-from tools.pdf_loader import extract_text_from_pdf
+from tools.text_loader import extract_text
 from agents.requisitos_analyst import get_requisitos_analyst_agent, build_requisitos_analysis_task
 from crewai import Crew
 from dotenv import load_dotenv
@@ -9,24 +9,20 @@ import re
 
 load_dotenv()
 
-def procesar_pdf_con_modelo(file_bytes: bytes, model: str) -> dict:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+def procesar_archivo_con_modelo(file_bytes: bytes, model: str, file) -> dict:    
+    filename = file.filename
+    ext = os.path.splitext(filename)[1].lower()
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
         tmp.write(file_bytes)
         tmp_path = tmp.name
 
-    texto = extract_text_from_pdf(tmp_path)
+    texto = extract_text(tmp_path)
     os.remove(tmp_path)
 
     agent = get_requisitos_analyst_agent(model)
     task = build_requisitos_analysis_task(texto, agent)
     crew = Crew(agents=[agent], tasks=[task], verbose=False)
-
-    # output = str(crew.kickoff())
-
-    # return {
-    #     "modelo_usado": model,
-    #     "analisis": output
-    # }
 
     output_raw = str(crew.kickoff())
     try:
@@ -39,6 +35,7 @@ def procesar_pdf_con_modelo(file_bytes: bytes, model: str) -> dict:
         "modelo_usado": model,
         "analisis": parsed_json
     }
+
 
 def extraer_json_de_respuesta(texto: str) -> str:
     """
