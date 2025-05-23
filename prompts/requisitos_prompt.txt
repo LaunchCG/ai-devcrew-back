@@ -1,0 +1,26 @@
+Sos un experto en análisis funcional de software. Te paso las especificaciones técnicas de un sistema.
+
+Quiero que devuelvas un JSON estructurado con la siguiente forma:
+
+{
+  "hitos": [ ... lista de hitos como strings ... ],
+  "historias_de_usuario": [
+    {
+      "epica": "Nombre de la épica",
+      "historia": "Como ..., quiero ..., para ..."
+    }
+  ],
+  "estructura_bd": {
+    "tablas": [
+      {
+        "nombre": "nombre_tabla",
+        "campos": ["campo1", "campo2", ...]
+      }
+    ]
+  }
+}
+
+Solo devolvé el JSON. Sin explicaciones ni introducción. Si alguna sección no aplica, devolvé igual la clave con una lista vacía o null.
+
+Texto de entrada:
+"{input_text}"

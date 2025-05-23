@@ -1,17 +1,15 @@
 import tempfile
 import os
 from tools.pdf_loader import extract_text_from_pdf
-from crewai import Agent, Task, Crew
+from agents.requisitos_analyst import get_requisitos_analyst_agent, build_requisitos_analysis_task
+from crewai import Crew
 from dotenv import load_dotenv
-import litellm
+import json
+import re
 
 load_dotenv()
 
 def procesar_pdf_con_modelo(file_bytes: bytes, model: str) -> dict:
-    import tempfile
-    from crewai import Agent, Task, Crew
-    from tools.pdf_loader import extract_text_from_pdf
-
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(file_bytes)
         tmp_path = tmp.name
@@ -19,41 +17,34 @@ def procesar_pdf_con_modelo(file_bytes: bytes, model: str) -> dict:
     texto = extract_text_from_pdf(tmp_path)
     os.remove(tmp_path)
 
-    agent = Agent(
-        role="Analista de requisitos",
-        goal="Analizar especificaciones técnicas...",
-        backstory="Sos un experto funcional con capacidad de estructurar requisitos para desarrollo.",
-        verbose=True,
-        allow_delegation=False,
-        llm=model  # ← simplemente el nombre del modelo
-    )
-
-    prompt = f"""
-Sos un experto en análisis de software. Te paso las especificaciones técnicas de un proyecto.
-
-Tu tarea es:
-1. Detectar los hitos principales del proyecto (máximo 5).
-2. Para cada hito, generar 1 o más historias de usuario en formato:
-
-Como [tipo de usuario], quiero [acción], para [beneficio].
-
-3. Si es necesario, describí una estructura básica de base de datos con tablas y relaciones.
-4. Si hay lógica que lo amerite, generá un diagrama de flujo o de componentes (en texto o Mermaid.js).
-
-Texto de entrada:
-"{texto}"
-"""
-
-    task = Task(
-        description=prompt,
-        expected_output="Hitos, historias de usuario y diseño de base de datos si aplica",
-        agent=agent
-    )
-
+    agent = get_requisitos_analyst_agent(model)
+    task = build_requisitos_analysis_task(texto, agent)
     crew = Crew(agents=[agent], tasks=[task], verbose=False)
-    # output = crew.kickoff()
-    output = str(crew.kickoff())
+
+    # output = str(crew.kickoff())
+
+    # return {
+    #     "modelo_usado": model,
+    #     "analisis": output
+    # }
+
+    output_raw = str(crew.kickoff())
+    try:
+        json_puro = extraer_json_de_respuesta(output_raw)
+        parsed_json = json.loads(json_puro)
+    except Exception as e:
+        raise ValueError(f"❌ No se pudo extraer un JSON válido.\nSalida:\n{output_raw}\n\nError: {str(e)}")
+
     return {
         "modelo_usado": model,
-        "analisis": output
+        "analisis": parsed_json
     }
+
+def extraer_json_de_respuesta(texto: str) -> str:
+    """
+    Extrae el primer bloque JSON válido desde una respuesta que puede tener markdown o texto adicional.
+    """
+    match = re.search(r'\{[\s\S]+\}', texto)
+    if match:
+        return match.group(0)
+    raise ValueError("No se encontró un bloque JSON válido en la respuesta del modelo.")
