@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Body
+from services.jira_publicador import publicar_tickets_en_jira
 
 
 load_dotenv()
@@ -22,10 +24,18 @@ async def process_request(file: UploadFile = File(...), model: str = Form(...)):
     if not file.filename.endswith((".pdf", ".docx")):
         raise HTTPException(status_code=400, detail="Solo se aceptan archivos PDF o Word (.docx)")
 
-
     try:
         content = await file.read()
         resultado = resultado = procesar_archivo_con_modelo(content, model, file)
         return JSONResponse(content=resultado)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/publish-to-jira")
+async def publish_to_jira(data: dict = Body(...)):
+    try:
+        analisis = data.get("analisis", data)  # soporta JSON completo o solo el nodo
+        resultado = publicar_tickets_en_jira(analisis)
+        return {"resultado": resultado}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

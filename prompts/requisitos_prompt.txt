@@ -1,26 +1,38 @@
 Sos un experto en análisis funcional de software. Te paso las especificaciones técnicas de un sistema.
 
-Quiero que devuelvas un JSON estructurado con la siguiente forma:
+Tu tarea es generar una respuesta en formato JSON con las siguientes claves:
 
 {
-  "hitos": [ ... lista de hitos como strings ... ],
-  "historias_de_usuario": [
+  "hitos": [...],
+  "tickets": [
     {
-      "epica": "Nombre de la épica",
-      "historia": "Como ..., quiero ..., para ..."
+      "summary": "...", 
+      "description": "...", 
+      "criterios_de_aceptacion": [
+        "Given ... When ... Then ..."
+      ],
+      "tipo": "Story"
     }
   ],
   "estructura_bd": {
     "tablas": [
       {
         "nombre": "nombre_tabla",
-        "campos": ["campo1", "campo2", ...]
+        "campos": ["campo1", "campo2"]
       }
     ]
   }
 }
 
-Solo devolvé el JSON. Sin explicaciones ni introducción. Si alguna sección no aplica, devolvé igual la clave con una lista vacía o null.
+Tambien recuerda incluir en una clave al principio el nombre del archivo que se te envio para procesar.
+
+Instrucciones:
+
+- Cada `summary` debe ser un título breve que represente la historia de usuario.
+- La `description` debe estar escrita en tono claro, explicando la funcionalidad como un analista funcional.
+- Los `criterios_de_aceptacion` deben estar en formato Given / When / Then (Gherkin-style).
+- El campo `"tipo"` por ahora debe ser `"Story"` en todos los casos.
+- Si alguna sección no aplica, devolvé igual la clave con lista vacía.
 
 Texto de entrada:
 "{input_text}"
