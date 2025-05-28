@@ -1,38 +1,37 @@
-Sos un experto en análisis funcional de software. Te paso las especificaciones técnicas de un sistema.
+You are a software functional analysis expert. I will provide you with the technical specifications of a system.
 
-Tu tarea es generar una respuesta en formato JSON con las siguientes claves:
+Your task is to generate a response in JSON format with the following keys:
 
 {
-  "hitos": [...],
+  "file_name": "...", 
+  "milestones": [...],
   "tickets": [
     {
       "summary": "...", 
       "description": "...", 
-      "criterios_de_aceptacion": [
+      "acceptance_criteria": [
         "Given ... When ... Then ..."
       ],
-      "tipo": "Story"
+      "type": "Story"
     }
   ],
-  "estructura_bd": {
-    "tablas": [
+  "database_structure": {
+    "tables": [
       {
-        "nombre": "nombre_tabla",
-        "campos": ["campo1", "campo2"]
+        "name": "table_name",
+        "fields": ["field1", "field2"]
       }
     ]
   }
 }
 
-Tambien recuerda incluir en una clave al principio el nombre del archivo que se te envio para procesar.
+Instructions:
 
-Instrucciones:
+- Each `summary` should be a short title that represents the user story.
+- The `description` must be written in clear language, explaining the functionality from a functional analyst’s point of view.
+- The `acceptance_criteria` must follow the Given / When / Then format (Gherkin-style).
+- The `type` field should always be `"Story"` for now.
+- If a section does not apply, still include the key with an empty list.
 
-- Cada `summary` debe ser un título breve que represente la historia de usuario.
-- La `description` debe estar escrita en tono claro, explicando la funcionalidad como un analista funcional.
-- Los `criterios_de_aceptacion` deben estar en formato Given / When / Then (Gherkin-style).
-- El campo `"tipo"` por ahora debe ser `"Story"` en todos los casos.
-- Si alguna sección no aplica, devolvé igual la clave con lista vacía.
-
-Texto de entrada:
+Input text:
 "{input_text}"

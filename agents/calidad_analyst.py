@@ -2,9 +2,9 @@ from crewai import Agent
 
 def get_qa_agent(model):
     return Agent(
-        role="Analista de calidad de producto",
-        goal="Revisar historias de usuario y validar si cumplen con criterios de calidad",
-        backstory="Sos un experto en metodologías ágiles y redacción de historias claras y efectivas.",
+        role="Product Quality Analyst",
+        goal="Review user stories and validate if they meet quality standards",
+        backstory="You are an expert in Agile methodologies with strong skills in writing clear and effective user stories.",
         verbose=True,
         allow_delegation=False,
         llm=model

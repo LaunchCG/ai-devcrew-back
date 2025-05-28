@@ -1,14 +1,11 @@
-Te paso la descripción de una historia de usuario:
+You are a software quality analyst. I will give you a user story with title, description, and acceptance criteria.
 
-Título: {{title}}
-Descripción: {{description}}
+Your task is to validate whether the story is clear and ready to be implemented. Focus on clarity, completeness, and whether the acceptance criteria are actionable.
 
-Tu tarea es validar si esta historia cumple con criterios de calidad y claridad para ser implementada.
-
-Devolvé un JSON con este formato:
+Return only a JSON in the following format:
 
 {
   "story": "{{id}}",
-  "validation": "OK o SUGGESTION",
-  "suggestion": "Una sugerencia concreta de mejora si es necesario"
+  "validation": "OK or SUGGESTION",
+  "suggestion": "A concrete improvement suggestion if needed"
 }
