@@ -1,0 +1,14 @@
+Te paso la descripción de una historia de usuario:
+
+Título: {{title}}
+Descripción: {{description}}
+
+Tu tarea es validar si esta historia cumple con criterios de calidad y claridad para ser implementada.
+
+Devolvé un JSON con este formato:
+
+{
+  "story": "{{id}}",
+  "validation": "OK o SUGGESTION",
+  "suggestion": "Una sugerencia concreta de mejora si es necesario"
+}
