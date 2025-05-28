@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from requests.auth import HTTPBasicAuth
 from services.procesamiento import procesar_archivo_con_modelo
 from fastapi.responses import JSONResponse
 import os
@@ -39,3 +40,28 @@ async def publish_to_jira(data: dict = Body(...)):
         return {"resultado": resultado}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/jira-user")
+async def get_jira_user():
+    from services.jira_publicador import auth, headers, JIRA_DOMAIN
+    import requests
+
+    try:
+        url = f"https://{JIRA_DOMAIN}/rest/api/3/myself"
+        email = os.getenv("JIRA_EMAIL")
+        api_token = os.getenv("JIRA_API_TOKEN")
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers, auth=HTTPBasicAuth(email, api_token))
+        return {
+            "url": url,
+            "status_code": response.status_code,
+            "text": response.text,
+            "user": email,
+            "domain": JIRA_DOMAIN            
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
