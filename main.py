@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Body
 from services.jira_publicador import publicar_tickets_en_jira
+from agents.calidad_analyst import get_qa_agent
+from crewai import Task, Crew
+from services.jira_issues import obtener_detalles_issues
 
 
 load_dotenv()
@@ -62,6 +65,60 @@ async def get_jira_user():
             "user": email,
             "domain": JIRA_DOMAIN            
         }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/validate-jira-stories")
+async def validate_jira_stories(data: dict):
+    try:
+        model = data.get("model", "gpt-4")
+        ids = data.get("ids", [])
+
+        if not ids:
+            raise ValueError("Debes enviar una lista de IDs de Jira")
+
+        detalles = obtener_detalles_issues(ids)
+        agente = get_qa_agent(model)
+
+        resultados = []
+        for historia in detalles:
+            if historia.get("error"):
+                resultados.append({
+                    "story": historia["id"],
+                    "validation": "ERROR",
+                    "suggestion": historia["error"]
+                })
+                continue
+
+            prompt = f"""
+                    Te paso la descripción de una historia de usuario:
+
+                    Título: {historia['summary']}
+                    Descripción: {historia['description']}
+
+                    Tu tarea es validar si esta historia cumple con criterios de calidad y claridad para ser implementada.
+
+                    Devolvé un JSON con este formato:
+
+                    {{
+                    "story": "{historia['id']}",
+                    "validation": "OK o ERROR",
+                    "suggestion": "Una sugerencia concreta de mejora si es necesario"
+                    }}
+                    """
+
+            task = Task(
+                description=prompt,
+                agent=agente,
+                expected_output="Un JSON con el análisis de la historia",
+            )
+            crew = Crew(agents=[agente], tasks=[task])
+            salida = crew.kickoff()
+            resultados.append(salida)
+
+        return {"resultados": resultados}
 
     except Exception as e:
         return {"error": str(e)}
