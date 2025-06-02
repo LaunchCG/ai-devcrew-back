@@ -1,7 +1,7 @@
 import tempfile
 import os
 from tools.text_loader import extract_text
-from agents.requisitos_analyst import get_requisitos_analyst_agent, build_requisitos_analysis_task
+from agents.requirements_analyst import get_requirements_analyst_agent, build_requirements_analysis_task
 from crewai import Crew
 from dotenv import load_dotenv
 import json
@@ -20,8 +20,8 @@ def procesar_archivo_con_modelo(file_bytes: bytes, model: str, file) -> dict:
     texto = extract_text(tmp_path)
     os.remove(tmp_path)
 
-    agent = get_requisitos_analyst_agent(model)
-    task = build_requisitos_analysis_task(texto, agent)
+    agent = get_requirements_analyst_agent(model)
+    task = build_requirements_analysis_task(texto, agent)
     crew = Crew(agents=[agent], tasks=[task], verbose=False)
 
     output_raw = str(crew.kickoff())

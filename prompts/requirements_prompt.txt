@@ -32,6 +32,8 @@ Instructions:
 - The `acceptance_criteria` must follow the Given / When / Then format (Gherkin-style).
 - The `type` field should always be `"Story"` for now.
 - If a section does not apply, still include the key with an empty list.
+- Please ensure the JSON is strictly valid (no trailing commas, correctly closed brackets)
+- Always use english as main language on the responses.
 
 Input text:
 "{input_text}"
