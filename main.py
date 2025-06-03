@@ -10,6 +10,7 @@ from services.jira_publicador import publicar_tickets_en_jira
 from agents.calidad_analyst import get_qa_agent
 from crewai import Task, Crew
 from services.jira_issues import obtener_detalles_issues
+from services.jira_issues import get_issues_from_board
 import json
 import re
 from jinja2 import Template
@@ -146,3 +147,11 @@ async def validate_jira_stories(data: dict):
 
     except Exception as e:
         return {"error": str(e)}
+
+@app.get("/get-all-stories")
+async def get_all_stories(board_name: str):
+    try:
+        result = get_issues_from_board(board_name)
+        return JSONResponse(content=result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
