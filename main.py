@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Body
 from services.jira_publicador import publicar_tickets_en_jira
-from agents.calidad_analyst import get_qa_agent
+from agents.qa_analyst import get_qa_agent
 from crewai import Task, Crew
 from services.jira_issues import obtener_detalles_issues
 from services.jira_issues import get_issues_from_board
@@ -74,79 +74,21 @@ async def get_jira_user():
         return {"error": str(e)}
 
 
+from services.story_validation import validate_jira_stories_logic
+
 @app.post("/validate-jira-stories")
 async def validate_jira_stories(data: dict):
     try:
-        model = data.get("model", "gpt-4") 
-        ids = data.get("ids", [])
+        model = data.get("model", "gpt-4")
+        story_ids = data.get("ids", [])
+        if not story_ids:
+            raise ValueError("You must send a list of Jira Story IDs")
 
-        if not ids:
-            raise ValueError("Debes enviar una lista de IDs de Jira")
-
-        detalles = obtener_detalles_issues(ids)
-        agente = get_qa_agent(model)
-
-        # Cargar y preparar template
-        with open("prompts/qa_review_prompt.txt", "r", encoding="utf-8") as f:
-            template = Template(f.read())
-
-        resultados = []
-        for historia in detalles:
-            if historia.get("error"):
-                resultados.append({
-                    "story": historia["id"],
-                    "validation": "ERROR",
-                    "suggestion": historia["error"]
-                })
-                continue
-
-            prompt = template.render(
-                title=historia["summary"],
-                description=historia["description"],
-                id=historia["id"]
-            )
-
-            task = Task(
-                description=prompt,
-                agent=agente,
-                expected_output="Un JSON con el análisis de la historia",
-            )
-            crew = Crew(agents=[agente], tasks=[task])
-            salida = crew.kickoff()
-
-            # Intentar parsear solo la parte útil
-            # raw_output = salida.get("raw") or salida.get("tasks_output", [{}])[0].get("raw", "")
-            # Manejo de salida como string
-            if hasattr(salida, "raw"):
-                raw_output = salida.raw
-            elif hasattr(salida, "tasks_output") and salida.tasks_output:
-                raw_output = salida.tasks_output[0].raw
-            else:
-                raw_output = str(salida)
-
-
-            raw_output = raw_output.strip()
-
-            if raw_output.startswith("```json"):
-                raw_output = raw_output.replace("```json", "").strip()
-            if raw_output.endswith("```"):
-                raw_output = raw_output[:-3].strip()
-
-            try:
-                parsed = json.loads(raw_output)
-                resultados.append(parsed)
-            except Exception as e:
-                resultados.append({
-                    "story": historia["id"],
-                    "validation": "ERROR",
-                    "suggestion": f"No se pudo interpretar la respuesta del agente: {str(e)}",
-                    "raw_output": raw_output
-                })
-
-        return resultados
+        return validate_jira_stories_logic(story_ids, model)
 
     except Exception as e:
         return {"error": str(e)}
+
 
 @app.get("/get-all-stories")
 async def get_all_stories(board_name: str):
