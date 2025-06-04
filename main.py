@@ -14,6 +14,9 @@ from services.jira_issues import get_issues_from_board
 import json
 import re
 from jinja2 import Template
+from services.jira_commenter import post_comments_to_jira
+from typing import List
+from models.story_review_comment import StoryReview
 
 
 load_dotenv()
@@ -97,3 +100,11 @@ async def get_all_stories(board_name: str):
         return JSONResponse(content=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/comment-review-results")
+async def comment_review_results(data: List[StoryReview]):
+
+    try:
+        return post_comments_to_jira(data)
+    except Exception as e:
+        return {"error": str(e)}
