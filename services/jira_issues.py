@@ -64,7 +64,7 @@ def get_issues_from_board(board_name: str) -> list[dict]:
                 "id": issue["id"],
                 "key": issue["key"],
                 "summary": issue["fields"]["summary"],
-                "description": issue["fields"]["description"]
+                "description": issue["fields"]["description"] or ""
             })
     else:
         detalles.append({
