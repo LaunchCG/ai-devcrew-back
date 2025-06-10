@@ -7,17 +7,10 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Body
 from services.jira_publicador import publicar_tickets_en_jira
-from agents.qa_analyst import get_qa_agent
-from crewai import Task, Crew
-from services.jira_issues import obtener_detalles_issues
-from services.jira_issues import get_issues_from_board
-import json
-import re
-from jinja2 import Template
+from services.jira_issues import get_issues_from_board, delete_issue_request
 from services.jira_commenter import post_comments_to_jira
 from typing import List
 from models.story_review_comment import StoryReview
-
 
 load_dotenv()
 app = FastAPI()
@@ -92,14 +85,24 @@ async def validate_jira_stories(data: dict):
     except Exception as e:
         return {"error": str(e)}
 
-
 @app.get("/get-all-stories")
-async def get_all_stories(board_name: str):
+async def get_all_stories():
     try:
-        result = get_issues_from_board(board_name)
+        result = get_issues_from_board()
         return JSONResponse(content=result)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"error": str(e)}
+    
+@app.delete("/delete-issue")
+async def delete_issue(issue_key: str):
+    try:
+        response = delete_issue_request(issue_key)
+        if response.status_code == 204:
+            return JSONResponse(content={"message": "✅ Issue removed successfully."})
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        return {"error": str(e)}
     
 @app.post("/comment-review-results")
 async def comment_review_results(data: List[StoryReview]):
