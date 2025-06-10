@@ -4,14 +4,15 @@ from jinja2 import Template
 from agents.qa_analyst import get_qa_agent
 from services.jira_issues import obtener_detalles_issues
 from tools.text_utils import extract_first_json_block
+from services.prompt_loader import get_prompt
 
 
 def validate_jira_stories_logic(story_ids, model="gpt-4"):
     issue_details = obtener_detalles_issues(story_ids)
-    qa_agent = get_qa_agent(model)
+    qa_agent = get_qa_agent(model)    
 
-    with open("prompts/qa_review_prompt.txt", "r", encoding="utf-8") as f:
-        prompt_template = Template(f.read())
+    prompt_str = get_prompt("QA_REVIEW_PROMPT")
+    prompt_template = Template(prompt_str)
 
     results = []
 

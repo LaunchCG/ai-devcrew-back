@@ -1,6 +1,7 @@
 from crewai import Agent, Task
 from dotenv import load_dotenv
 import os
+from services.prompt_loader import get_prompt
 
 load_dotenv()
 
@@ -15,9 +16,8 @@ def get_requirements_analyst_agent(model: str) -> Agent:
     )
 
 def build_requirements_analysis_task(text: str, agent: Agent) -> Task:
-    prompt_path = "prompts/requirements_prompt.txt"
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        prompt_template = f.read()
+
+    prompt_template = get_prompt("REQUIREMENTS_ANALYSIS_PROMPT")
 
     full_prompt = prompt_template.replace("{input_text}", text.strip())
 
