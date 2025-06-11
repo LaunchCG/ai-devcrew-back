@@ -9,6 +9,7 @@ from fastapi import Body
 from services.jira_publicador import publicar_tickets_en_jira
 from services.jira_issues import get_issues_from_board, delete_issue_request
 from services.jira_commenter import post_comments_to_jira
+from services.prompt_manager import get_prompt_byname, addorupdate_prompt_byname
 from typing import List
 from models.story_review_comment import StoryReview
 
@@ -109,5 +110,20 @@ async def comment_review_results(data: List[StoryReview]):
 
     try:
         return post_comments_to_jira(data)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/get-prompt")
+async def get_prompt(prompt_name: str):
+    try:
+        result = get_prompt_byname(prompt_name)
+        return JSONResponse(content=result)
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.post("/add-or-update-prompt")
+async def addorupdate_prompt(prompt_name: str, prompt_value: str):
+    try:
+        return addorupdate_prompt_byname(prompt_name, prompt_value)
     except Exception as e:
         return {"error": str(e)}
