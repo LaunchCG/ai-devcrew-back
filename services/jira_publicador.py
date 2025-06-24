@@ -55,7 +55,7 @@ def publicar_tickets_en_jira(analisis: dict):
         criterios = ticket.get("acceptance_criteria", [])
         descripcion = ticket.get("description", "")
 
-        criterios_md = "\n\n**Acceptance Criteria:**\n" + "\n".join(f"- {c}" for c in criterios) if criterios else ""
+        criterios_md = "\n\nAcceptance Criteria:\n" + "\n".join(f"{c}" for c in criterios) if criterios else ""
         descripcion_final = descripcion.strip() + criterios_md
 
         status, res = crear_issue(summary=summary, description=descripcion_final, issue_type=tipo)
