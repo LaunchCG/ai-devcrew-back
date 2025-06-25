@@ -12,6 +12,7 @@ from services.jira_commenter import post_comments_to_jira
 from services.prompt_manager import get_prompt_byname, addorupdate_prompt_byname
 from typing import List
 from models.story_review_comment import StoryReview
+from services.domain_model_extractor import extract_domain_model_from_stories
 
 load_dotenv()
 app = FastAPI()
@@ -125,5 +126,17 @@ async def get_prompt(prompt_name: str):
 async def addorupdate_prompt(prompt_name: str, prompt_value: str):
     try:
         return addorupdate_prompt_byname(prompt_name, prompt_value)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/extract-domain-model")
+async def extract_domain_model(data: dict):
+    try:
+        model = data.get("model", "gpt-4")
+        story_ids = data.get("ids", [])
+        if not story_ids:
+            raise ValueError("You must send a list of Jira Story IDs")
+
+        return extract_domain_model_from_stories(story_ids, model)
     except Exception as e:
         return {"error": str(e)}
