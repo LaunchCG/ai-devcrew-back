@@ -60,6 +60,8 @@ def validate_jira_stories_logic(story_ids, model="gpt-4"):
 
             if (hash_label != hash_issue):
                 parsed["ticket_updated"] = "true"
+            else:
+                parsed["ticket_updated"] = "false"
                 
             results.append(parsed)
         except Exception as e:

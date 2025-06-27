@@ -141,8 +141,8 @@ async def extract_domain_model(data: dict):
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/download-terraform")
-async def download_terraform():
+@app.post("/download-terraform")
+async def download_terraform(data: dict):
     folder = "terraform"
     file_name = "main.tf"
     file_path = os.path.join(folder, file_name)
