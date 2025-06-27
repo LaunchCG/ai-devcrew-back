@@ -5,7 +5,10 @@ from agents.qa_analyst import get_qa_agent
 from services.jira_issues import obtener_detalles_issues
 from tools.text_utils import extract_first_json_block
 from services.prompt_manager import get_prompt_byname
+import hashlib
 
+def generar_hash(texto: str) -> str:
+    return hashlib.sha256(texto.encode("utf-8")).hexdigest()[:8]
 
 def validate_jira_stories_logic(story_ids, model="gpt-4"):
     issue_details = obtener_detalles_issues(story_ids)
@@ -51,6 +54,13 @@ def validate_jira_stories_logic(story_ids, model="gpt-4"):
         try:
             cleaned_json = extract_first_json_block(raw_output)
             parsed = json.loads(cleaned_json)
+            labels = issue["raw"]["fields"].get("labels", [])
+            hash_label = next((label for label in labels if label.startswith("hash-")), None)
+            hash_issue = "hash-"+generar_hash(issue["summary"]+issue["description"])
+
+            if (hash_label != hash_issue):
+                parsed["ticket_updated"] = "true"
+                
             results.append(parsed)
         except Exception as e:
             results.append({

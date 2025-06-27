@@ -1,6 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 import os
+import hashlib
 
 JIRA_EMAIL = os.getenv("JIRA_EMAIL")
 JIRA_API_TOKEN = os.getenv("JIRA_API_TOKEN")
@@ -12,6 +13,9 @@ headers = {
     "Accept": "application/json",
     "Content-Type": "application/json"
 }
+
+def generar_hash(texto: str) -> str:
+    return hashlib.sha256(texto.encode("utf-8")).hexdigest()[:8]
 
 def crear_issue(summary: str, description: str, issue_type: str = "Story"):
     url = f"https://{JIRA_DOMAIN}/rest/api/3/issue"
@@ -38,7 +42,10 @@ def crear_issue(summary: str, description: str, issue_type: str = "Story"):
             },
             "issuetype": {
                 "name": issue_type
-            }
+            },
+            "labels": [
+                "hash-"+generar_hash(summary+description)
+            ]
         }
     }
 

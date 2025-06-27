@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from requests.auth import HTTPBasicAuth
 from services.procesamiento import procesar_archivo_con_modelo
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
@@ -140,3 +140,18 @@ async def extract_domain_model(data: dict):
         return extract_domain_model_from_stories(story_ids, model)
     except Exception as e:
         return {"error": str(e)}
+
+@app.get("/download-terraform")
+async def download_terraform():
+    folder = "terraform"
+    file_name = "main.tf"
+    file_path = os.path.join(folder, file_name)
+
+    if not os.path.isfile(file_path):
+        return {"error": f"File {file_path} not found."}
+
+    return FileResponse(
+        path=file_path,
+        media_type="application/json",
+        filename=file_name
+    )
