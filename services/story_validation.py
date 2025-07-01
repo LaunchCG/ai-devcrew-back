@@ -8,7 +8,7 @@ from services.prompt_manager import get_prompt_byname
 import hashlib
 
 def generar_hash(texto: str) -> str:
-    return hashlib.sha256(texto.encode("utf-8")).hexdigest()[:8]
+    return hashlib.sha256(texto.encode("utf-8")).hexdigest()
 
 def validate_jira_stories_logic(story_ids, model="gpt-4"):
     issue_details = obtener_detalles_issues(story_ids)

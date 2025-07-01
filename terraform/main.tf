@@ -1,120 +1,103 @@
-{
-  "platform": {
-    "name": "liberty-ai-backend",
-    "environment": "dev",
-    "region": "eastus"
-  },
-  "networking": {
-    "vnet_required": true,
-    "vnet_cidr": "10.0.0.0/16",
-    "subnets": [
-      {
-        "name": "app-subnet",
-        "cidr": "10.0.1.0/24",
-        "type": "app",
-        "nsg_attached": true
-      },
-      {
-        "name": "db-subnet",
-        "cidr": "10.0.2.0/24",
-        "type": "db",
-        "nsg_attached": true
-      }
-    ],
-    "hub_spoke": false,
-    "vpn_gateway": false,
-    "firewall_required": false,
-    "private_dns_zones": [
-      "blob.core.windows.net",
-      "database.windows.net"
-    ]
-  },
-  "identity_access": {
-    "aad_integration": true,
-    "rbac_assignments": [
-      {
-        "principal_type": "group",
-        "role": "Contributor",
-        "scope": "subscription"
-      }
-    ],
-    "managed_identities": "system-assigned"
-  },
-  "compute": {
-    "app_services": [
-      {
-        "name": "backend-app",
-        "sku": "P1v2",
-        "runtime": "dotnet"
-      }
-    ],
-    "azure_functions": [
-      {
-        "name": "trigger-fn",
-        "plan_type": "consumption",
-        "runtime": "python",
-        "triggers": ["HTTP"]
-      }
-    ],
-    "virtual_machines": [
-      {
-        "count": 1,
-        "size": "Standard_B2s",
-        "os": "Linux",
-        "auto_shutdown": true,
-        "public_ip": false
-      }
-    ]
-  },
-  "storage_data": {
-    "blob_storage": [
-      {
-        "name": "logs-storage",
-        "redundancy": "LRS",
-        "access_tier": "Hot"
-      }
-    ],
-    "databases": [
-      {
-        "type": "CosmosDB",
-        "tier": "Standard",
-        "private_endpoint": true,
-        "backup_policy": "Geo-Redundant"
-      }
-    ]
-  },
-  "ci_cd": {
-    "terraform_state_backend": "Azure Storage",
-    "ci_cd_tool": "GitHub Actions",
-    "state_locking_enabled": true,
-    "secret_management": "Azure Key Vault"
-  },
-  "monitoring": {
-    "log_analytics_workspace": true,
-    "retention_days": 90,
-    "application_insights": true,
-    "diagnostic_settings": true,
-    "alerts": [
-      {
-        "type": "CPU",
-        "threshold_percent": 80,
-        "email_recipients": ["ops@example.com"]
-      }
-    ]
-  },
-  "security": {
-    "azure_policy_definitions": ["deny-public-ip", "allowed-skus"],
-    "key_vault_needed": true,
-    "key_vault_soft_delete": true,
-    "key_vault_access_policies_defined": true,
-    "security_center_tier": "Standard"
-  },
-  "tags_naming": {
-    "naming_convention": "{env}-{service}-{region}",
-    "tags": {
-      "environment": "dev",
-      "owner": "ai-team",
-      "cost_center": "R&D-123"
+
+    provider "azurerm" {
+    features {}
     }
-  }
-}
+
+    resource "azurerm_resource_group" "liberty-ai-backend-rg" {
+    name     = "liberty-ai-backend-rg"
+    location = "eastus"
+    }
+    
+    resource "azurerm_virtual_network" "liberty-ai-backend-vnet" {
+    name                = "liberty-ai-backend-vnet"
+    address_space       = ["10.0.0.0/16"]
+    location            = "eastus"
+    resource_group_name = azurerm_resource_group.liberty-ai-backend-rg.name
+    }
+    
+    resource "azurerm_subnet" "app-subnet" {
+    name                 = "app-subnet"
+    resource_group_name  = azurerm_resource_group.liberty-ai-backend-rg.name
+    virtual_network_name = azurerm_virtual_network.liberty-ai-backend-vnet.name
+    address_prefixes     = ["10.0.1.0/24"]
+    }
+    
+    resource "azurerm_subnet" "db-subnet" {
+    name                 = "db-subnet"
+    resource_group_name  = azurerm_resource_group.liberty-ai-backend-rg.name
+    virtual_network_name = azurerm_virtual_network.liberty-ai-backend-vnet.name
+    address_prefixes     = ["10.0.2.0/24"]
+    }
+    
+    resource "azurerm_app_service_plan" "backend-app_plan" {
+    name                = "backend-app-plan"
+    location            = "eastus"
+    resource_group_name = azurerm_resource_group.liberty-ai-backend-rg.name
+    sku {
+        tier = "PremiumV2"
+        size = "P1v2"
+    }
+    }
+
+    resource "azurerm_app_service" "backend-app" {
+    name                = "backend-app"
+    location            = "eastus"
+    resource_group_name = azurerm_resource_group.liberty-ai-backend-rg.name
+    app_service_plan_id = azurerm_app_service_plan.backend-app_plan.id
+    }
+    
+    resource "azurerm_virtual_machine" "liberty-ai-backend-vm" {
+    name                  = "liberty-ai-backend-vm"
+    location              = "eastus"
+    resource_group_name   = azurerm_resource_group.liberty-ai-backend-rg.name
+    network_interface_ids = []
+    vm_size               = "Standard_B2s"
+
+    os_profile {
+        computer_name  = "liberty-ai-backend-vm"
+        admin_username = "adminuser"
+        admin_password = "Password1234!"
+    }
+
+    os_profile_linux_config {
+        disable_password_authentication = false
+    }
+
+    storage_image_reference {
+        publisher = "Canonical"
+        offer     = "UbuntuServer"
+        sku       = "18.04-LTS"
+        version   = "latest"
+    }
+
+    storage_os_disk {
+        name              = "liberty-ai-backend-vm_osdisk"
+        caching           = "ReadWrite"
+        create_option     = "FromImage"
+        managed_disk_type = "Standard_LRS"
+    }
+    }
+    
+    resource "azurerm_storage_account" "logs-storage" {
+    name                     = "logsstorage"
+    resource_group_name      = azurerm_resource_group.liberty-ai-backend-rg.name
+    location                 = "eastus"
+    account_tier             = "Standard"
+    account_replication_type = "LRS"
+    }
+    
+    resource "azurerm_cosmosdb_account" "cosmosdb" {
+    name                = "liberty-ai-backend-cosmosdb"
+    location            = "eastus"
+    resource_group_name = azurerm_resource_group.liberty-ai-backend-rg.name
+    offer_type          = "Standard"
+    kind                = "GlobalDocumentDB"
+    consistency_policy {
+        consistency_level = "Session"
+    }
+    geo_location {
+        location          = "eastus"
+        failover_priority = 0
+    }
+    }
+    

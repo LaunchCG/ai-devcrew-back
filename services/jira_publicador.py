@@ -15,7 +15,7 @@ headers = {
 }
 
 def generar_hash(texto: str) -> str:
-    return hashlib.sha256(texto.encode("utf-8")).hexdigest()[:8]
+    return hashlib.sha256(texto.encode("utf-8")).hexdigest()
 
 def crear_issue(summary: str, description: str, issue_type: str = "Story"):
     url = f"https://{JIRA_DOMAIN}/rest/api/3/issue"
