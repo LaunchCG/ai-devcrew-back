@@ -13,7 +13,7 @@ from services.prompt_manager import get_prompt_byname, addorupdate_prompt_byname
 from typing import List
 from models.story_review_comment import StoryReview
 from services.domain_model_extractor import extract_domain_model_from_stories
-import json
+from services.terraform_services import generate_terraform
 
 load_dotenv()
 app = FastAPI()
@@ -143,147 +143,11 @@ async def extract_domain_model(data: dict):
         return {"error": str(e)}
 
 @app.post("/download-terraform")
-async def download_terraform(config: dict):
-    with open("terraform/infra.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    platform = data["platform"]
-    region = data["platform"]["region"]
-    rg_name = f"{platform['name']}-rg"
-
-    contenido_tf = f"""
-    provider "azurerm" {{
-    features {{}}
-    }}
-
-    resource "azurerm_resource_group" "{rg_name}" {{
-    name     = "{rg_name}"
-    location = "{region}"
-    }}
-    """
-
-    # NETWORKING
-    networking = data["networking"]
-    vnet_name = f"{platform['name']}-vnet"
-    vnet_cidr = networking["vnet_cidr"]
-
-    contenido_tf += f"""
-    resource "azurerm_virtual_network" "{vnet_name}" {{
-    name                = "{vnet_name}"
-    address_space       = ["{vnet_cidr}"]
-    location            = "{region}"
-    resource_group_name = azurerm_resource_group.{rg_name}.name
-    }}
-    """
-
-    for subnet in networking["subnets"]:
-        subnet_name = subnet["name"]
-        subnet_cidr = subnet["cidr"]
-        contenido_tf += f"""
-    resource "azurerm_subnet" "{subnet_name}" {{
-    name                 = "{subnet_name}"
-    resource_group_name  = azurerm_resource_group.{rg_name}.name
-    virtual_network_name = azurerm_virtual_network.{vnet_name}.name
-    address_prefixes     = ["{subnet_cidr}"]
-    }}
-    """
-
-    # COMPUTE: App Services
-    for app_service in data["compute"]["app_services"]:
-        app_name = app_service["name"]
-        sku = app_service["sku"]
-        contenido_tf += f"""
-    resource "azurerm_app_service_plan" "{app_name}_plan" {{
-    name                = "{app_name}-plan"
-    location            = "{region}"
-    resource_group_name = azurerm_resource_group.{rg_name}.name
-    sku {{
-        tier = "PremiumV2"
-        size = "{sku}"
-    }}
-    }}
-
-    resource "azurerm_app_service" "{app_name}" {{
-    name                = "{app_name}"
-    location            = "{region}"
-    resource_group_name = azurerm_resource_group.{rg_name}.name
-    app_service_plan_id = azurerm_app_service_plan.{app_name}_plan.id
-    }}
-    """
-
-    # COMPUTE: VMs
-    for vm in data["compute"]["virtual_machines"]:
-        vm_name = f"{platform['name']}-vm"
-        contenido_tf += f"""
-    resource "azurerm_virtual_machine" "{vm_name}" {{
-    name                  = "{vm_name}"
-    location              = "{region}"
-    resource_group_name   = azurerm_resource_group.{rg_name}.name
-    network_interface_ids = []
-    vm_size               = "{vm['size']}"
-
-    os_profile {{
-        computer_name  = "{vm_name}"
-        admin_username = "adminuser"
-        admin_password = "Password1234!"
-    }}
-
-    os_profile_linux_config {{
-        disable_password_authentication = false
-    }}
-
-    storage_image_reference {{
-        publisher = "Canonical"
-        offer     = "UbuntuServer"
-        sku       = "18.04-LTS"
-        version   = "latest"
-    }}
-
-    storage_os_disk {{
-        name              = "{vm_name}_osdisk"
-        caching           = "ReadWrite"
-        create_option     = "FromImage"
-        managed_disk_type = "Standard_LRS"
-    }}
-    }}
-    """
-
-    # STORAGE: Blob
-    for blob in data["storage_data"]["blob_storage"]:
-        blob_name = blob["name"]
-        contenido_tf += f"""
-    resource "azurerm_storage_account" "{blob_name}" {{
-    name                     = "{blob_name.replace('-', '')}"
-    resource_group_name      = azurerm_resource_group.{rg_name}.name
-    location                 = "{region}"
-    account_tier             = "Standard"
-    account_replication_type = "{blob['redundancy']}"
-    }}
-    """
-
-    # STORAGE: CosmosDB
-    for db in data["storage_data"]["databases"]:
-        if db["type"] == "CosmosDB":
-            contenido_tf += f"""
-    resource "azurerm_cosmosdb_account" "cosmosdb" {{
-    name                = "{platform['name']}-cosmosdb"
-    location            = "{region}"
-    resource_group_name = azurerm_resource_group.{rg_name}.name
-    offer_type          = "Standard"
-    kind                = "GlobalDocumentDB"
-    consistency_policy {{
-        consistency_level = "Session"
-    }}
-    geo_location {{
-        location          = "{region}"
-        failover_priority = 0
-    }}
-    }}
-    """
-
+async def download_terraform(data: dict):
+    terraform_code = generate_terraform(data)
     file_path = "terraform/main.tf"
     with open(file_path, "w", encoding="utf-8") as f:
-        f.write(contenido_tf)
+        f.write(terraform_code)
 
     return FileResponse(
         path=file_path,
