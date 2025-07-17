@@ -2,12 +2,13 @@ import json
 from crewai import Task, Crew
 from jinja2 import Template
 from agents.domain_modeler import get_domain_modeler_agent
-from tools.text_utils import extract_first_json_block
+from tools.text_utils import extract_first_json_block, extract_json_from_markdown_response
 from services.jira_issues import obtener_detalles_issues
 from services.prompt_manager import get_prompt_byname
 
 def extract_domain_model_from_stories(story_ids: list, model: str = "gpt-4"):
     stories = obtener_detalles_issues(story_ids)
+    print(stories)
     agent = get_domain_modeler_agent(model)
 
     # Concatenar las historias en texto
@@ -30,7 +31,7 @@ def extract_domain_model_from_stories(story_ids: list, model: str = "gpt-4"):
     # Extraer JSON limpio
     raw = output.raw if hasattr(output, "raw") else str(output)
     try:
-        json_clean = extract_first_json_block(raw)
+        json_clean = extract_json_from_markdown_response(raw)
         return json.loads(json_clean)
     except Exception as e:
         return {"error": str(e), "raw_output": raw}
