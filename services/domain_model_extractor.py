@@ -8,7 +8,6 @@ from services.prompt_manager import get_prompt_byname
 
 def extract_domain_model_from_stories(story_ids: list, model: str = "gpt-4"):
     stories = obtener_detalles_issues(story_ids)
-    print(stories)
     agent = get_domain_modeler_agent(model)
 
     # Concatenar las historias en texto
