@@ -13,7 +13,8 @@ from services.prompt_manager import get_prompt_byname, addorupdate_prompt_byname
 from typing import List
 from models.story_review_comment import StoryReview
 from services.domain_model_extractor import extract_domain_model_from_stories
-from services.terraform_services import generate_terraform
+from services.github_issues import get_github_issues
+
 
 load_dotenv()
 app = FastAPI()
@@ -144,13 +145,25 @@ async def extract_domain_model(data: dict):
 
 @app.post("/download-terraform")
 async def download_terraform(data: dict):
-    terraform_code = generate_terraform(data)
-    file_path = "terraform/main.tf"
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(terraform_code)
+    folder = "terraform"
+    file_name = "main.tf"
+    file_path = os.path.join(folder, file_name)
+
+    if not os.path.isfile(file_path):
+        return {"error": f"File {file_path} not found."}
 
     return FileResponse(
         path=file_path,
-        media_type="application/octet-stream",
-        filename="main.tf"
+        media_type="application/json",
+        filename=file_name
     )
+
+@app.post("/github-issues")
+async def github_issues(data: dict = Body(...)):
+    try:
+        token = data["token"]
+        repo = data["repo"]
+        model = data.get("model", "gpt-4")
+        return get_github_issues(token, repo, model)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
