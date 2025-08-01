@@ -14,6 +14,7 @@ from typing import List
 from models.story_review_comment import StoryReview
 from services.domain_model_extractor import extract_domain_model_from_stories
 from services.github_issues import get_github_issues
+from services.github_actions import analyze_github_actions
 
 
 load_dotenv()
@@ -167,3 +168,14 @@ async def github_issues(data: dict = Body(...)):
         return get_github_issues(token, repo, model)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/github-actions")
+async def github_actions(data: dict = Body(...)):
+    try:
+        token = data["token"]
+        repo = data["repo"]
+        model = data.get("model", "gpt-4")
+        return analyze_github_actions(token, repo, model)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
